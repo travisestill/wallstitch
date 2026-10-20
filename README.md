@@ -17,6 +17,10 @@ sets them for you.
   [wallhaven.cc](https://wallhaven.cc) that match your desktop's shape and
   resolution (safe-for-work only); click one to download and edit it. Images
   are saved to `~/Pictures/WallStitch/`.
+- **Spanning slideshow:** import up to 50 random wallpapers (or use a folder)
+  and cycle through them in sync on every monitor. Plasma's own slideshow
+  runs a separate timer per screen, so WallStitch uses a systemd user timer
+  that stitches each image across all screens at once.
 - **Restore:** one click puts back the wallpaper you had before.
 - **CLI:** for scripts and dotfiles.
 
@@ -44,6 +48,11 @@ wallstitch set pano.jpg --bezel 40        # hide 40px behind each monitor gap
 wallstitch set pano.jpg --zoom 1.3 --center 0.5,0.4 --dry-run
 wallstitch reapply                        # re-apply after changing monitors
 wallstitch restore                        # back to your previous wallpaper
+
+wallstitch fetch 20                       # download 20 random wallpapers that fit
+wallstitch slideshow start --fetch 30 --interval 15 --shuffle
+wallstitch slideshow start --folder ~/Pictures/Panoramas
+wallstitch slideshow next | stop | status
 ```
 
 For best quality, use an image at least as large as your combined desktop,
@@ -65,7 +74,7 @@ for example 5120×1440 for two 1440p monitors side by side.
 
 - [ ] Re-apply automatically when monitors are plugged in or unplugged
 - [ ] Physical-size correction for monitors with different pixel density
-- [ ] Synced spanning slideshows
+- [x] Synced spanning slideshows
 - [ ] Layout profiles (docked / laptop only)
 - [ ] Lock screen and SDDM login screen
 - [ ] GNOME, Hyprland/Sway and X11 backends

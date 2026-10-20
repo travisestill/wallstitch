@@ -23,12 +23,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from wallstitch import APP_ID, __version__
+from wallstitch import APP_ID, __version__, slideshow
 from wallstitch.backends import BackendError
 from wallstitch.core import Settings, restore, stitch
 from wallstitch.layout import Plan, Screen, View, plan
 from wallstitch.render import load_image
-from wallstitch.screens import detect_screens
+from wallstitch.screens import desktop_pixel_size, detect_screens
+from wallstitch.slideshow_dialog import SlideshowDialog
 from wallstitch.wallhaven_dialog import WallhavenDialog
 
 PREVIEW_MAX_WIDTH = 2400  # downscale the preview copy so dragging stays smooth
@@ -170,6 +171,9 @@ class MainWindow(QMainWindow):
         random_btn = QPushButton("Random Wallpapers…")
         random_btn.setToolTip("Browse 10 random wallpapers from wallhaven.cc that fit your monitors")
         random_btn.clicked.connect(self.random_wallpapers)
+        slideshow_btn = QPushButton("Slideshow…")
+        slideshow_btn.setToolTip("Import up to 50 wallpapers and cycle through them on all monitors")
+        slideshow_btn.clicked.connect(self.open_slideshow)
 
         self.bezel = QDoubleSpinBox()
         self.bezel.setRange(0, 2000)
@@ -193,6 +197,7 @@ class MainWindow(QMainWindow):
         bar = QHBoxLayout()
         bar.addWidget(open_btn)
         bar.addWidget(random_btn)
+        bar.addWidget(slideshow_btn)
         bar.addSpacing(16)
         bar.addWidget(QLabel("Bezel gap:"))
         bar.addWidget(self.bezel)
@@ -232,12 +237,13 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"{Path(path).name} — {w}×{h}")
 
     def random_wallpapers(self) -> None:
-        # Search at the full device-pixel size of the desktop so images stay sharp.
-        p = plan(self.preview.screens, (1, 1))
-        scale = max(s.scale for s in self.preview.screens)
-        dialog = WallhavenDialog(round(p.canvas_width * scale), round(p.canvas_height * scale), self)
+        dialog = WallhavenDialog(*desktop_pixel_size(self.preview.screens), self)
         if dialog.exec() and dialog.chosen_path:
             self.load(str(dialog.chosen_path))
+
+    def open_slideshow(self) -> None:
+        screens = self.preview.screens
+        SlideshowDialog(desktop_pixel_size(screens), self.bezel.value(), self).exec()
 
     def open_image(self) -> None:
         start = str(Path(self.image_path).parent) if self.image_path else str(Path.home() / "Pictures")
@@ -263,6 +269,7 @@ class MainWindow(QMainWindow):
         settings = Settings(self.image_path, self.bezel.value(), self.preview.view)
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
+            slideshow.stop()
             stitch(settings, self.preview.screens)
         except (BackendError, ValueError, OSError) as e:
             QMessageBox.warning(self, "WallStitch", f"Could not apply wallpaper:\n{e}")

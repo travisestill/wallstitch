@@ -26,3 +26,12 @@ def detect_screens() -> list[Screen]:
     if not screens:
         raise RuntimeError("no screens detected")
     return sorted(screens, key=lambda s: (s.y, s.x))
+
+
+def desktop_pixel_size(screens: list[Screen]) -> tuple[int, int]:
+    """Combined desktop size in device pixels, used to pick sharp-enough images."""
+    from wallstitch.layout import plan
+
+    p = plan(screens, (1, 1))
+    scale = max(s.scale for s in screens)
+    return round(p.canvas_width * scale), round(p.canvas_height * scale)

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSize, QStandardPaths, Qt, QUrl
+from PySide6.QtCore import QSize, Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QImage, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
@@ -21,15 +21,11 @@ from PySide6.QtWidgets import (
 )
 
 from wallstitch import __version__
+from wallstitch.paths import download_dir
 from wallstitch.wallhaven import Wallpaper, best_ratio, parse_search, search_url
 
 COUNT = 10
 THUMB_WIDTH = 300
-
-
-def download_dir() -> Path:
-    pictures = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation)
-    return Path(pictures or Path.home() / "Pictures") / "WallStitch"
 
 
 class WallhavenDialog(QDialog):

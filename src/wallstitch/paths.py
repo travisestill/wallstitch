@@ -22,3 +22,11 @@ def config_dir() -> Path:
 
 def state_dir() -> Path:
     return _xdg("XDG_STATE_HOME", ".local/state")
+
+
+def download_dir() -> Path:
+    """Where downloaded wallpapers are kept: ~/Pictures/WallStitch (localised)."""
+    from PySide6.QtCore import QStandardPaths
+
+    pictures = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation)
+    return Path(pictures or Path.home() / "Pictures") / "WallStitch"

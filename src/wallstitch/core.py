@@ -50,7 +50,12 @@ def _save_snapshot_once(backend: Backend) -> None:
     path.write_text(json.dumps(snapshot, indent=2))
 
 
-def stitch(settings: Settings, screens: list[Screen] | None = None) -> Plan:
+def stitch(settings: Settings, screens: list[Screen] | None = None, remember: bool = True) -> Plan:
+    """Span ``settings.image`` across the screens.
+
+    ``remember`` saves the settings for ``reapply`` and the editor; the
+    slideshow turns it off so it doesn't overwrite the user's own choice.
+    """
     screens = screens or detect_screens()
     image = load_image(settings.image)
     result = plan(screens, (image.width(), image.height()), settings.view, settings.bezel)
@@ -61,11 +66,15 @@ def stitch(settings: Settings, screens: list[Screen] | None = None) -> Plan:
     backend.apply({sl.screen: files[sl.screen.name] for sl in result.slices})
 
     settings.view = result.view
-    settings.save()
+    if remember:
+        settings.save()
     return result
 
 
 def restore() -> None:
+    from wallstitch import slideshow
+
+    slideshow.stop()
     path = _snapshot_path()
     if not path.exists():
         raise BackendError("no previous wallpaper saved - nothing to restore")
