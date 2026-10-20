@@ -106,7 +106,7 @@ for example 5120×1440 for two 1440p monitors side by side.
 - [ ] Layout profiles (docked / laptop only)
 - [ ] Lock screen and SDDM login screen
 - [ ] GNOME, Hyprland/Sway and X11 backends
-- [ ] Flatpak and .deb packages
+- [x] Flatpak and .deb packages (on GitHub Releases)
 
 ## Packaging
 
