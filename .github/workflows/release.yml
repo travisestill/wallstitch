@@ -5,6 +5,8 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # Manual runs build both packages as a dry run, without publishing.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,6 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Tag must match the version in the code, Debian changelog and AppStream
+        if: github.ref_type == 'tag'
         run: |
           tag="${GITHUB_REF_NAME#v}"
           grep -q "__version__ = \"$tag\"" src/wallstitch/__init__.py
@@ -44,11 +47,12 @@ jobs:
       - uses: flathub-infra/flatpak-github-actions/flatpak-builder@master
         with:
           manifest-path: packaging/flatpak/io.github.travisestill.WallStitch.yml
-          bundle: WallStitch-${{ github.ref_name }}-x86_64.flatpak
+          bundle: WallStitch-${{ github.ref_type == 'tag' && github.ref_name || 'dev' }}-x86_64.flatpak
           cache-key: flatpak-builder-${{ github.sha }}
 
   release:
     needs: [deb, flatpak]
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
       contents: write
