@@ -29,6 +29,7 @@ from wallstitch.core import Settings, restore, stitch
 from wallstitch.layout import Plan, Screen, View, plan
 from wallstitch.render import load_image
 from wallstitch.screens import detect_screens
+from wallstitch.wallhaven_dialog import WallhavenDialog
 
 PREVIEW_MAX_WIDTH = 2400  # downscale the preview copy so dragging stays smooth
 MARGIN = 24
@@ -166,6 +167,9 @@ class MainWindow(QMainWindow):
 
         open_btn = QPushButton("Open Image…")
         open_btn.clicked.connect(self.open_image)
+        random_btn = QPushButton("Random Wallpapers…")
+        random_btn.setToolTip("Browse 10 random wallpapers from wallhaven.cc that fit your monitors")
+        random_btn.clicked.connect(self.random_wallpapers)
 
         self.bezel = QDoubleSpinBox()
         self.bezel.setRange(0, 2000)
@@ -188,6 +192,7 @@ class MainWindow(QMainWindow):
 
         bar = QHBoxLayout()
         bar.addWidget(open_btn)
+        bar.addWidget(random_btn)
         bar.addSpacing(16)
         bar.addWidget(QLabel("Bezel gap:"))
         bar.addWidget(self.bezel)
@@ -225,6 +230,14 @@ class MainWindow(QMainWindow):
         self.apply_btn.setEnabled(True)
         w, h = image.width(), image.height()
         self.statusBar().showMessage(f"{Path(path).name} — {w}×{h}")
+
+    def random_wallpapers(self) -> None:
+        # Search at the full device-pixel size of the desktop so images stay sharp.
+        p = plan(self.preview.screens, (1, 1))
+        scale = max(s.scale for s in self.preview.screens)
+        dialog = WallhavenDialog(round(p.canvas_width * scale), round(p.canvas_height * scale), self)
+        if dialog.exec() and dialog.chosen_path:
+            self.load(str(dialog.chosen_path))
 
     def open_image(self) -> None:
         start = str(Path(self.image_path).parent) if self.image_path else str(Path.home() / "Pictures")

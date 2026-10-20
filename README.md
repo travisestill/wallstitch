@@ -13,6 +13,10 @@ sets them for you.
   your monitors.
 - **Bezel compensation:** hide a strip of the image behind the monitor frames
   so straight lines stay straight.
+- **Random wallpapers:** browse 10 random images from
+  [wallhaven.cc](https://wallhaven.cc) that match your desktop's shape and
+  resolution (safe-for-work only); click one to download and edit it. Images
+  are saved to `~/Pictures/WallStitch/`.
 - **Restore:** one click puts back the wallpaper you had before.
 - **CLI:** for scripts and dotfiles.
 
