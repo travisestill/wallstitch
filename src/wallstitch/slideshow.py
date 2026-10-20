@@ -21,6 +21,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from wallstitch import APP_ID, paths
+from wallstitch.layout import View
 
 MAX_IMAGES = 50
 AGENT_BUS_NAME = f"{APP_ID}.Slideshow"
@@ -34,6 +35,8 @@ class Slideshow:
     shuffle: bool = False
     bezel: float = 0.0
     running: bool = False
+    # Per-image framing from the preview (image path -> View fields)
+    views: dict[str, dict] = field(default_factory=dict)
     # Playback state
     order: list[int] = field(default_factory=list)
     position: int = -1
@@ -52,6 +55,9 @@ class Slideshow:
             return cls(**json.loads(cls.path().read_text()))
         except (FileNotFoundError, json.JSONDecodeError, TypeError):
             return None
+
+    def view_for(self, image: str) -> View:
+        return View(**self.views.get(image, {}))
 
     def current(self) -> str | None:
         if 0 <= self.position < len(self.order) and self.order[self.position] < len(self.images):
@@ -169,16 +175,33 @@ def _launch_agent() -> None:
 # --- control -----------------------------------------------------------------
 
 
-def start(images: list[str], interval_minutes: int, shuffle: bool, bezel: float) -> Slideshow:
-    """Show the first image now and keep changing it in the background."""
+def start(
+    images: list[str],
+    interval_minutes: int,
+    shuffle: bool,
+    bezel: float,
+    views: dict[str, dict] | None = None,
+) -> Slideshow:
+    """Show the first image now and keep changing it in the background.
+
+    If the same images are already playing, settings are updated in place and
+    the current image is just re-framed instead of skipping ahead.
+    """
     from wallstitch.backends import BackendError
 
     images = images[:MAX_IMAGES]
     if not images:
         raise BackendError("the slideshow needs at least one image")
-    show = Slideshow(images, max(1, interval_minutes), shuffle, bezel, running=True)
-    show.save()
-    next_slide()
+    views = {k: v for k, v in (views or {}).items() if k in images}
+    show = Slideshow(images, max(1, interval_minutes), shuffle, bezel, running=True, views=views)
+    previous = Slideshow.load()
+    if previous and previous.running and previous.images == images and previous.shuffle == shuffle:
+        show.order, show.position = previous.order, previous.position
+        show.save()
+        reapply_current()
+    else:
+        show.save()
+        next_slide()
     set_autostart(True)
     if not is_running():
         _launch_agent()  # a running agent picks up the new settings by itself
@@ -206,7 +229,7 @@ def next_slide() -> str:
     if image is None:
         raise BackendError("none of the slideshow images exist any more")
     show.save()
-    stitch(Settings(image=image, bezel=show.bezel), remember=False)
+    stitch(Settings(image=image, bezel=show.bezel, view=show.view_for(image)), remember=False)
     return image
 
 
@@ -216,4 +239,4 @@ def reapply_current() -> None:
 
     show = Slideshow.load()
     if show and (image := show.current()) and Path(image).is_file():
-        stitch(Settings(image=image, bezel=show.bezel), remember=False)
+        stitch(Settings(image=image, bezel=show.bezel, view=show.view_for(image)), remember=False)

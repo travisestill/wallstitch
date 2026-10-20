@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 
+from collections import OrderedDict
+from dataclasses import asdict
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Qt, QThread, Signal
+from PySide6.QtGui import QFont, QImage
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -21,12 +24,19 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QPushButton,
     QSpinBox,
+    QSplitter,
     QVBoxLayout,
+    QWidget,
 )
 
 from wallstitch import paths, slideshow
 from wallstitch.backends import BackendError
+from wallstitch.layout import Screen, View
+from wallstitch.preview import Preview, load_preview
+from wallstitch.screens import desktop_pixel_size
 from wallstitch.wallhaven import import_random
+
+PREVIEW_CACHE = 8  # decoded previews kept around for quick flipping
 
 
 class _Cancelled(Exception):
@@ -60,12 +70,14 @@ class ImportWorker(QObject):
 
 
 class SlideshowDialog(QDialog):
-    def __init__(self, desktop_size: tuple[int, int], bezel: float, parent=None):
+    def __init__(self, screens: list[Screen], bezel: float, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Slideshow")
-        self.desktop_size = desktop_size
-        self.bezel = bezel
+        self.desktop_size = desktop_size = desktop_pixel_size(screens)
         self._thread: QThread | None = None
+        self.images: list[str] = []
+        self.views: dict[str, dict] = {}  # per-image framing
+        self._previews: OrderedDict[str, tuple[QImage, tuple[int, int]]] = OrderedDict()
 
         # --- choose images ---
         self.count = QSpinBox()
@@ -91,15 +103,46 @@ class SlideshowDialog(QDialog):
         self.progress = QProgressBar()
         self.progress.setVisible(False)
         self.list = QListWidget()
-        self.list.setMinimumHeight(200)
+        self.list.setMinimumWidth(220)
+        self.list.currentRowChanged.connect(self.show_image)
         self.summary = QLabel()
+
+        # Same drag/zoom preview as the main window, for framing each image.
+        self.preview = Preview(screens)
+        self.preview.setMinimumSize(480, 200)
+        self.preview.bezel = bezel
+        self.preview.viewChanged.connect(self._remember_view)
+        reset_btn = QPushButton("Reset Framing")
+        reset_btn.setToolTip("Go back to the centred, fill-the-screens framing for this image")
+        reset_btn.clicked.connect(self.reset_framing)
+        hint = QLabel("Select an image, then drag to move it · scroll to zoom")
+        hint.setEnabled(False)
+        preview_bar = QHBoxLayout()
+        preview_bar.addWidget(hint, 1)
+        preview_bar.addWidget(reset_btn)
+        preview_box = QWidget()
+        preview_layout = QVBoxLayout(preview_box)
+        preview_layout.setContentsMargins(0, 0, 0, 0)
+        preview_layout.addWidget(self.preview, 1)
+        preview_layout.addLayout(preview_bar)
+
+        list_box = QWidget()
+        list_layout = QVBoxLayout(list_box)
+        list_layout.setContentsMargins(0, 0, 0, 0)
+        list_layout.addWidget(self.list, 1)
+        list_layout.addWidget(self.summary)
+
+        splitter = QSplitter()
+        splitter.addWidget(list_box)
+        splitter.addWidget(preview_box)
+        splitter.setStretchFactor(1, 1)
+        splitter.setSizes([240, 760])
 
         images_box = QGroupBox("Images")
         images_layout = QVBoxLayout(images_box)
         images_layout.addLayout(import_row)
         images_layout.addWidget(self.progress)
-        images_layout.addWidget(self.list)
-        images_layout.addWidget(self.summary)
+        images_layout.addWidget(splitter, 1)
 
         # --- playback ---
         self.interval = QSpinBox()
@@ -127,16 +170,19 @@ class SlideshowDialog(QDialog):
         bar.addWidget(close_btn)
 
         layout = QVBoxLayout(self)
-        layout.addWidget(images_box)
+        layout.addWidget(images_box, 1)
         layout.addLayout(form)
         layout.addLayout(bar)
-        self.resize(620, 480)
+        self.resize(1040, 640)
 
         existing = slideshow.Slideshow.load()
         if existing:
+            self.views = dict(existing.views)
             self.set_images(existing.images)
             self.interval.setValue(existing.interval_minutes)
             self.shuffle.setChecked(existing.shuffle)
+            if existing.running and (current := existing.current()) in self.images:
+                self.list.setCurrentRow(self.images.index(current))
         else:
             self.set_images([])
         self.refresh_status()
@@ -145,13 +191,69 @@ class SlideshowDialog(QDialog):
 
     def set_images(self, images: list[str]) -> None:
         self.images = images[: slideshow.MAX_IMAGES]
+        self.list.blockSignals(True)
         self.list.clear()
         for image in self.images:
             item = QListWidgetItem(Path(image).name)
             item.setToolTip(image)
             self.list.addItem(item)
+            self._mark_framed(item, image)
+        self.list.blockSignals(False)
         self.summary.setText(f"{len(self.images)} of max {slideshow.MAX_IMAGES} images")
         self.start_btn.setEnabled(bool(self.images))
+        if self.images:
+            self.list.setCurrentRow(0)
+        else:
+            self.preview.clear_image()
+
+    def _mark_framed(self, item: QListWidgetItem, image: str) -> None:
+        """Italic names show which images have custom framing."""
+        font = QFont(item.font())
+        font.setItalic(image in self.views)
+        item.setFont(font)
+
+    def _current_image(self) -> str | None:
+        row = self.list.currentRow()
+        return self.images[row] if 0 <= row < len(self.images) else None
+
+    def show_image(self, row: int) -> None:
+        if not 0 <= row < len(self.images):
+            return
+        path = self.images[row]
+        if path in self._previews:
+            self._previews.move_to_end(path)
+        else:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            try:
+                self._previews[path] = load_preview(path)
+            except ValueError as e:
+                self.preview.clear_image()
+                self.status.setText(str(e))
+                return
+            finally:
+                QApplication.restoreOverrideCursor()
+            while len(self._previews) > PREVIEW_CACHE:
+                self._previews.popitem(last=False)
+        image, full_size = self._previews[path]
+        self.preview.set_image(image, full_size)
+        if path in self.views:
+            self.preview.view = View(**self.views[path])
+            self.preview.view = self.preview.current_plan().view  # clamp to this layout
+        self.preview.update()
+
+    def _remember_view(self) -> None:
+        if (path := self._current_image()) is None:
+            return
+        self.views[path] = asdict(self.preview.view)
+        self._mark_framed(self.list.currentItem(), path)
+
+    def reset_framing(self) -> None:
+        if (path := self._current_image()) is None:
+            return
+        self.views.pop(path, None)
+        self._mark_framed(self.list.currentItem(), path)
+        self.preview.view = View()
+        self.preview.update()
 
     def use_folder(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Slideshow folder", str(paths.download_dir()))
@@ -203,6 +305,7 @@ class SlideshowDialog(QDialog):
     def refresh_status(self) -> None:
         running = slideshow.is_running()
         self.stop_btn.setEnabled(running)
+        self.start_btn.setText("Update Slideshow" if running else "Start Slideshow")
         show = slideshow.Slideshow.load() if running else None
         if show:
             self.status.setText(
@@ -214,7 +317,13 @@ class SlideshowDialog(QDialog):
     def start(self) -> None:
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
-            slideshow.start(self.images, self.interval.value(), self.shuffle.isChecked(), self.bezel)
+            slideshow.start(
+                self.images,
+                self.interval.value(),
+                self.shuffle.isChecked(),
+                self.preview.bezel,
+                self.views,
+            )
         except (BackendError, ValueError, OSError) as e:
             self.status.setText(f"Could not start: {e}")
             return

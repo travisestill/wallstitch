@@ -143,3 +143,47 @@ def test_stop_marks_slideshow_not_running(images, tmp_path, monkeypatch):
 def test_flatpak_uses_plain_command(monkeypatch):
     monkeypatch.setattr(slideshow, "in_flatpak", lambda: True)
     assert slideshow.agent_command() == ["wallstitch", "slideshow", "run"]
+
+
+def test_view_for_uses_saved_framing(images):
+    show = Slideshow(images, views={images[1]: {"zoom": 1.5, "center_x": 0.3, "center_y": 0.5}})
+    assert show.view_for(images[1]).zoom == 1.5
+    assert show.view_for(images[0]).zoom == 1.0
+
+
+@pytest.fixture
+def no_side_effects(tmp_path, monkeypatch):
+    """Run start() without touching the desktop, autostart or the agent."""
+    pytest.importorskip("PySide6")  # absent in the minimal .deb build environment
+    import wallstitch.core
+
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    applied = []
+    monkeypatch.setattr(wallstitch.core, "stitch", lambda settings, **_: applied.append(settings))
+    monkeypatch.setattr(slideshow, "set_autostart", lambda enabled: None)
+    monkeypatch.setattr(slideshow, "is_running", lambda: True)
+    return applied
+
+
+def test_start_applies_framing_and_drops_stale_views(images, no_side_effects):
+    views = {images[0]: {"zoom": 2.0, "center_x": 0.5, "center_y": 0.5}, "/gone.png": {"zoom": 3.0}}
+    show = slideshow.start(images, 5, False, 0, views)
+    assert list(show.views) == [images[0]]
+    assert no_side_effects[-1].image == images[0]
+    assert no_side_effects[-1].view.zoom == 2.0
+
+
+def test_restarting_same_images_updates_in_place(images, no_side_effects):
+    slideshow.start(images, 5, False, 0)
+    slideshow.next_slide()  # now on image 2
+    slideshow.start(images, 10, False, 0, {images[1]: {"zoom": 1.2, "center_x": 0.5, "center_y": 0.5}})
+    assert no_side_effects[-1].image == images[1]  # re-framed, not skipped ahead
+    assert no_side_effects[-1].view.zoom == 1.2
+    assert Slideshow.load().interval_minutes == 10
+
+
+def test_starting_different_images_begins_from_the_first(images, no_side_effects):
+    slideshow.start(images, 5, False, 0)
+    slideshow.next_slide()
+    slideshow.start(images[:2], 5, False, 0)
+    assert no_side_effects[-1].image == images[0]

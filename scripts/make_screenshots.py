@@ -50,11 +50,12 @@ def landscape(w: int = 5120, h: int = 1440) -> QImage:
 
 
 def main() -> None:
-    from wallstitch import paths
+    from wallstitch import slideshow
     from wallstitch.gui import MainWindow
     from wallstitch.layout import Screen
     from wallstitch.slideshow_dialog import SlideshowDialog
 
+    slideshow.is_running = lambda: False  # ignore any slideshow on this machine
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["XDG_CONFIG_HOME"] = tmp  # don't load the developer's own settings
         image = Path(tmp) / "panorama.png"
@@ -72,10 +73,19 @@ def main() -> None:
         OUT.mkdir(parents=True, exist_ok=True)
         win.grab().save(str(OUT / "main.png"))
 
-        dialog = SlideshowDialog((5120, 1440), 40)
-        names = [f"wallhaven-{i:02}.jpg" for i in range(1, 21)]
-        dialog.set_images([str(paths.download_dir() / n) for n in names])
-        dialog.status.setText("Imported 20 wallpapers")
+        slides = []
+        base = landscape()
+        for i in range(1, 7):
+            variant = base.flipped(Qt.Orientation.Horizontal) if i % 2 == 0 else base
+            path = Path(tmp) / f"wallhaven-{i:02}.png"
+            variant.save(str(path))
+            slides.append(str(path))
+        dialog = SlideshowDialog(win.preview.screens, 40)
+        dialog.set_images(slides)
+        dialog.list.setCurrentRow(1)
+        dialog.preview.view = dialog.preview.view.__class__(zoom=1.4, center_x=0.45, center_y=0.45)
+        dialog.preview.viewChanged.emit()
+        dialog.status.setText("Imported 6 wallpapers")
         dialog.show()
         app.processEvents()
         dialog.grab().save(str(OUT / "slideshow.png"))

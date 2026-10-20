@@ -5,11 +5,10 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import replace
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPainterPath, QPen
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QDoubleSpinBox,
@@ -26,137 +25,12 @@ from PySide6.QtWidgets import (
 from wallstitch import APP_ID, DONATE_URL, __version__, slideshow
 from wallstitch.backends import BackendError
 from wallstitch.core import Settings, restore, stitch
-from wallstitch.layout import Plan, Screen, View, plan
+from wallstitch.layout import View
+from wallstitch.preview import Preview
 from wallstitch.render import load_image
 from wallstitch.screens import desktop_pixel_size, detect_screens
 from wallstitch.slideshow_dialog import SlideshowDialog
 from wallstitch.wallhaven_dialog import WallhavenDialog
-
-PREVIEW_MAX_WIDTH = 2400  # downscale the preview copy so dragging stays smooth
-MARGIN = 24
-
-
-class Preview(QWidget):
-    viewChanged = Signal()
-
-    def __init__(self, screens: list[Screen]):
-        super().__init__()
-        self.screens = screens
-        self.image: QImage | None = None
-        self.image_size = (0, 0)  # full-resolution size, used for planning
-        self.view = View()
-        self.bezel = 0.0
-        self._drag_from: QPointF | None = None
-        self.setMinimumSize(640, 240)
-        self.setCursor(Qt.CursorShape.OpenHandCursor)
-
-    def set_image(self, image: QImage) -> None:
-        self.image_size = (image.width(), image.height())
-        self.image = (
-            image.scaledToWidth(PREVIEW_MAX_WIDTH, Qt.TransformationMode.SmoothTransformation)
-            if image.width() > PREVIEW_MAX_WIDTH
-            else image
-        )
-        self.view = View()
-        self.update()
-
-    def current_plan(self) -> Plan | None:
-        if self.image is None:
-            return None
-        return plan(self.screens, self.image_size, self.view, self.bezel)
-
-    def _fit(self, p: Plan) -> tuple[float, float, float]:
-        """Scale and offset that map canvas coordinates into the widget."""
-        avail_w = self.width() - 2 * MARGIN
-        avail_h = self.height() - 2 * MARGIN
-        k = min(avail_w / p.canvas_width, avail_h / p.canvas_height)
-        ox = (self.width() - p.canvas_width * k) / 2
-        oy = (self.height() - p.canvas_height * k) / 2
-        return k, ox, oy
-
-    def paintEvent(self, _event) -> None:
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-        painter.fillRect(self.rect(), self.palette().window())
-
-        p = self.current_plan()
-        if p is None:
-            # No image yet: just draw the monitor layout.
-            p = plan(self.screens, (1, 1), View(), self.bezel)
-        k, ox, oy = self._fit(p)
-
-        def to_widget(r) -> QRectF:
-            return QRectF(ox + r.x * k, oy + r.y * k, r.width * k, r.height * k)
-
-        screen_area = QPainterPath()
-        for sl in p.slices:
-            screen_area.addRect(to_widget(sl.canvas))
-
-        if self.image is not None:
-            iw, ih = self.image_size
-            target = QRectF(ox + p.image_left * k, oy + p.image_top * k, iw * p.scale * k, ih * p.scale * k)
-            # Ghost of the whole image so you can see what's being cropped...
-            painter.setOpacity(0.25)
-            painter.drawImage(target, self.image)
-            # ...and the parts that will actually be on your screens.
-            painter.setOpacity(1.0)
-            painter.save()
-            painter.setClipPath(screen_area)
-            painter.drawImage(target, self.image)
-            painter.restore()
-
-        pen = QPen(QColor("#3daee9"), 2)
-        painter.setPen(pen)
-        for sl in p.slices:
-            rect = to_widget(sl.canvas)
-            painter.drawRect(rect)
-            label = f"{sl.screen.name}  {sl.screen.width}×{sl.screen.height}"
-            painter.drawText(
-                rect.adjusted(8, 6, -8, -6), Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft, label
-            )
-
-        if self.image is None:
-            painter.setPen(self.palette().text().color())
-            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Open an image to get started")
-
-    # --- interaction -------------------------------------------------------
-
-    def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.MouseButton.LeftButton and self.image is not None:
-            self._drag_from = event.position()
-            self.setCursor(Qt.CursorShape.ClosedHandCursor)
-
-    def mouseMoveEvent(self, event) -> None:
-        p = self.current_plan()
-        if self._drag_from is None or p is None:
-            return
-        k, _, _ = self._fit(p)
-        delta = event.position() - self._drag_from
-        self._drag_from = event.position()
-        iw, ih = self.image_size
-        # Dragging the picture right moves the visible window left over it.
-        self.view = replace(
-            p.view,
-            center_x=p.view.center_x - delta.x() / k / (iw * p.scale),
-            center_y=p.view.center_y - delta.y() / k / (ih * p.scale),
-        )
-        self.view = self.current_plan().view  # clamp
-        self.update()
-        self.viewChanged.emit()
-
-    def mouseReleaseEvent(self, _event) -> None:
-        self._drag_from = None
-        self.setCursor(Qt.CursorShape.OpenHandCursor)
-
-    def wheelEvent(self, event) -> None:
-        if self.image is None:
-            return
-        steps = event.angleDelta().y() / 120
-        self.view = replace(self.view, zoom=self.view.zoom * (1.1**steps))
-        self.view = self.current_plan().view
-        self.update()
-        self.viewChanged.emit()
 
 
 class MainWindow(QMainWindow):
@@ -248,8 +122,7 @@ class MainWindow(QMainWindow):
             self.load(str(dialog.chosen_path))
 
     def open_slideshow(self) -> None:
-        screens = self.preview.screens
-        SlideshowDialog(desktop_pixel_size(screens), self.bezel.value(), self).exec()
+        SlideshowDialog(self.preview.screens, self.bezel.value(), self).exec()
 
     def open_image(self) -> None:
         start = str(Path(self.image_path).parent) if self.image_path else str(Path.home() / "Pictures")
