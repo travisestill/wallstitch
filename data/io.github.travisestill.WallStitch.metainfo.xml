@@ -24,7 +24,7 @@
       <li>Drag and zoom the image over a live preview of your monitors</li>
       <li>Bezel compensation keeps straight lines straight across monitor frames</li>
       <li>Browse random wallpapers from wallhaven.cc that fit your desktop's shape and resolution</li>
-      <li>Spanning slideshow of up to 50 images that changes every screen in sync</li>
+      <li>Spanning slideshow of up to 50 images that changes every screen in sync, with per-image framing</li>
       <li>One click restores your previous wallpaper</li>
       <li>Command-line interface for scripts and dotfiles</li>
     </ul>
@@ -87,7 +87,7 @@
           <li>Span one wallpaper across any monitor layout on KDE Plasma 6</li>
           <li>Visual editor with pan, zoom and bezel compensation</li>
           <li>Random wallpapers from wallhaven.cc sized for your desktop</li>
-          <li>Synced spanning slideshow of up to 50 images</li>
+          <li>Synced spanning slideshow of up to 50 images, with per-image framing</li>
           <li>Restore your previous wallpaper; full command-line interface</li>
         </ul>
       </description>
