@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=WallStitch
+GenericName=Spanning Wallpaper
+Comment=Stitch one wallpaper seamlessly across all your monitors
+Exec=wallstitch gui
+Icon=preferences-desktop-wallpaper
+Terminal=false
+Categories=Qt;KDE;Settings;DesktopSettings;
+Keywords=wallpaper;background;monitor;span;ultrawide;dual;
