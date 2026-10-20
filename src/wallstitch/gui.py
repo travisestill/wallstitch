@@ -9,7 +9,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import (
     QApplication,
     QDoubleSpinBox,
@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from wallstitch import APP_ID, __version__, slideshow
+from wallstitch import APP_ID, DONATE_URL, __version__, slideshow
 from wallstitch.backends import BackendError
 from wallstitch.core import Settings, restore, stitch
 from wallstitch.layout import Plan, Screen, View, plan
@@ -211,7 +211,13 @@ class MainWindow(QMainWindow):
 
         layout = QVBoxLayout()
         layout.addWidget(self.preview, 1)
-        layout.addWidget(hint)
+        support = QLabel(f'<a href="{DONATE_URL}">♥ Support WallStitch on Ko-fi</a>')
+        support.setOpenExternalLinks(True)
+        hint_row = QHBoxLayout()
+        hint_row.addWidget(hint)
+        hint_row.addStretch()
+        hint_row.addWidget(support)
+        layout.addLayout(hint_row)
         layout.addLayout(bar)
         central = QWidget()
         central.setLayout(layout)
@@ -292,6 +298,8 @@ def run() -> int:
     app.setApplicationName("WallStitch")
     app.setApplicationVersion(__version__)
     app.setDesktopFileName(APP_ID)
+    bundled_icon = Path(__file__).parent / "resources" / f"{APP_ID}.svg"
+    app.setWindowIcon(QIcon.fromTheme(APP_ID, QIcon(str(bundled_icon))))
     window = MainWindow()
     window.show()
     return app.exec()

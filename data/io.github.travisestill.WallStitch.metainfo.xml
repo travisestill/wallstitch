@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 Travis Estill <immyouany@gmail.com> -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<component type="desktop-application">
+  <id>io.github.travisestill.WallStitch</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <name>WallStitch</name>
+  <summary>Stretch one wallpaper seamlessly across all your monitors</summary>
+  <developer id="io.github.travisestill">
+    <name>Travis Estill</name>
+  </developer>
+
+  <description>
+    <p>
+      Linux desktops can't stretch a single wallpaper across several monitors.
+      WallStitch reads your monitor layout, lets you position the image
+      visually, then cuts it into one perfectly aligned piece per screen and
+      sets them for you.
+    </p>
+    <ul>
+      <li>Works with any layout: dual or triple monitors, ultrawides, stacked or offset screens, mixed resolutions and HiDPI scaling</li>
+      <li>Drag and zoom the image over a live preview of your monitors</li>
+      <li>Bezel compensation keeps straight lines straight across monitor frames</li>
+      <li>Browse random wallpapers from wallhaven.cc that fit your desktop's shape and resolution</li>
+      <li>Spanning slideshow of up to 50 images that changes every screen in sync</li>
+      <li>One click restores your previous wallpaper</li>
+      <li>Command-line interface for scripts and dotfiles</li>
+    </ul>
+    <p>KDE Plasma 6 is supported today; more desktops are planned.</p>
+  </description>
+
+  <launchable type="desktop-id">io.github.travisestill.WallStitch.desktop</launchable>
+  <provides>
+    <binary>wallstitch</binary>
+  </provides>
+
+  <url type="homepage">https://github.com/travisestill/wallstitch</url>
+  <url type="bugtracker">https://github.com/travisestill/wallstitch/issues</url>
+  <url type="vcs-browser">https://github.com/travisestill/wallstitch</url>
+  <url type="donation">https://ko-fi.com/fizzy503</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Position one image across two monitors, with bezel compensation</caption>
+      <image>https://raw.githubusercontent.com/travisestill/wallstitch/main/docs/screenshots/main.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Import wallpapers and run a slideshow that spans every screen</caption>
+      <image>https://raw.githubusercontent.com/travisestill/wallstitch/main/docs/screenshots/slideshow.png</image>
+    </screenshot>
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#c9b6e4</color>
+    <color type="primary" scheme_preference="dark">#2a1e3f</color>
+  </branding>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-info">mild</content_attribute>
+  </content_rating>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+
+  <keywords>
+    <keyword>wallpaper</keyword>
+    <keyword>background</keyword>
+    <keyword>multi-monitor</keyword>
+    <keyword>dual monitor</keyword>
+    <keyword>ultrawide</keyword>
+    <keyword>span</keyword>
+    <keyword>slideshow</keyword>
+  </keywords>
+
+  <releases>
+    <release version="0.1.0" date="2026-10-20">
+      <description>
+        <p>First release.</p>
+        <ul>
+          <li>Span one wallpaper across any monitor layout on KDE Plasma 6</li>
+          <li>Visual editor with pan, zoom and bezel compensation</li>
+          <li>Random wallpapers from wallhaven.cc sized for your desktop</li>
+          <li>Synced spanning slideshow of up to 50 images</li>
+          <li>Restore your previous wallpaper; full command-line interface</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+</component>

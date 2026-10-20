@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 Travis Estill <immyouany@gmail.com> -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d3557"/>
+      <stop offset="0.55" stop-color="#7b3f72"/>
+      <stop offset="1" stop-color="#f4a261"/>
+    </linearGradient>
+    <clipPath id="screens">
+      <rect x="8" y="30" width="54" height="40" rx="3"/>
+      <rect x="66" y="30" width="54" height="40" rx="3"/>
+    </clipPath>
+  </defs>
+
+  <g transform="translate(0 6)">
+  <!-- monitor bodies and stands -->
+  <rect x="5" y="27" width="60" height="46" rx="5" fill="#232629"/>
+  <rect x="63" y="27" width="60" height="46" rx="5" fill="#232629"/>
+  <path d="M29 73h12l3 14H26z M87 73h12l3 14H84z" fill="#4d5359"/>
+  <rect x="20" y="86" width="30" height="5" rx="2.5" fill="#31363b"/>
+  <rect x="78" y="86" width="30" height="5" rx="2.5" fill="#31363b"/>
+
+  <!-- one landscape spanning both screens -->
+  <g clip-path="url(#screens)">
+    <rect x="8" y="30" width="112" height="40" fill="url(#sky)"/>
+    <circle cx="64" cy="41" r="8" fill="#ffd166"/>
+    <path d="M8 70 L30 50 L44 60 L64 44 L82 58 L98 48 L120 66 V70 Z" fill="#2a1e3f"/>
+    <path d="M8 70 L22 62 L40 68 L58 60 L78 67 L96 61 L120 70 Z" fill="#14101f"/>
+  </g>
+
+  <!-- the stitch across the bezel -->
+  <g stroke="#3daee9" stroke-width="3" stroke-linecap="round">
+    <path d="M59 36 l10 4 M59 46 l10 4 M59 56 l10 4"/>
+  </g>
+  </g>
+</svg>

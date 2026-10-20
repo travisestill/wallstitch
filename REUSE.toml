@@ -1,6 +1,6 @@
 version = 1
 
 [[annotations]]
-path = ["README.md", ".gitignore", "data/**", ".github/**"]
+path = ["README.md", "CHANGELOG.md", ".gitignore", "data/**", "docs/**", ".github/**"]
 SPDX-FileCopyrightText = "2026 Travis Estill <immyouany@gmail.com>"
 SPDX-License-Identifier = "GPL-3.0-or-later"

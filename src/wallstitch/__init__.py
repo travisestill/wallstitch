@@ -4,3 +4,5 @@
 
 __version__ = "0.1.0"
 APP_ID = "io.github.travisestill.WallStitch"
+HOMEPAGE = "https://github.com/travisestill/wallstitch"
+DONATE_URL = "https://ko-fi.com/fizzy503"

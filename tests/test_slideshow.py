@@ -109,3 +109,37 @@ def test_find_random_falls_back_to_any_ratio(monkeypatch):
     monkeypatch.setattr(wallhaven, "_fetch", fake_fetch)
     assert [w.id for w in wallhaven.find_random(5120, 1440, 5)] == ["x"]
     assert "ratios=32x9" in urls[0] and "ratios" not in urls[1]
+
+
+def test_current_follows_advance(images):
+    show = Slideshow(images)
+    assert show.current() is None
+    show.advance()
+    show.advance()
+    assert show.current() == images[1]
+
+
+def test_autostart_entry_runs_the_agent(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    monkeypatch.delenv("FLATPAK_ID", raising=False)
+    monkeypatch.setattr(slideshow, "in_flatpak", lambda: False)
+    slideshow.set_autostart(True)
+    entry = (tmp_path / "autostart" / f"{slideshow.AGENT_BUS_NAME}.desktop").read_text()
+    assert "slideshow run" in entry and "-m wallstitch" in entry
+    slideshow.set_autostart(False)
+    assert not slideshow.autostart_file().exists()
+
+
+def test_stop_marks_slideshow_not_running(images, tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    monkeypatch.setattr(slideshow, "in_flatpak", lambda: False)
+    Slideshow(images, running=True).save()
+    slideshow.set_autostart(True)
+    slideshow.stop()
+    assert Slideshow.load().running is False
+    assert not slideshow.autostart_file().exists()
+
+
+def test_flatpak_uses_plain_command(monkeypatch):
+    monkeypatch.setattr(slideshow, "in_flatpak", lambda: True)
+    assert slideshow.agent_command() == ["wallstitch", "slideshow", "run"]

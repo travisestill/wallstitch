@@ -70,6 +70,7 @@ def build_parser() -> argparse.ArgumentParser:
     show_sub.add_parser("stop", help="stop the slideshow (keeps the current image)")
     show_sub.add_parser("next", help="skip to the next image")
     show_sub.add_parser("status", help="show whether a slideshow is running")
+    show_sub.add_parser("run", help=argparse.SUPPRESS)  # the background agent itself
     return p
 
 
@@ -173,6 +174,10 @@ def _slideshow(args: argparse.Namespace) -> int:
     elif args.action == "stop":
         slideshow.stop()
         print("Slideshow stopped.")
+    elif args.action == "run":
+        from wallstitch.agent import run
+
+        return run()
     elif args.action == "next":
         print(f"Now showing {slideshow.next_slide()}")
     elif args.action == "status":

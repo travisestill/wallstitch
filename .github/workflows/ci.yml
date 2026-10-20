@@ -28,3 +28,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: fsfe/reuse-action@v5
+
+  metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y appstream desktop-file-utils
+      - run: appstreamcli validate --no-net data/io.github.travisestill.WallStitch.metainfo.xml
+      - run: desktop-file-validate data/io.github.travisestill.WallStitch.desktop

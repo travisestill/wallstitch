@@ -2,6 +2,12 @@
 
 **Stitch one wallpaper seamlessly across all your monitors.**
 
+[![CI](https://github.com/travisestill/wallstitch/actions/workflows/ci.yml/badge.svg)](https://github.com/travisestill/wallstitch/actions/workflows/ci.yml)
+[![License: GPL v3+](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
+[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-support%20WallStitch-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/fizzy503)
+
+![WallStitch spanning one landscape across two monitors](docs/screenshots/main.png)
+
 Linux desktops (KDE Plasma included) can't stretch a single wallpaper across
 several monitors. WallStitch reads your monitor layout, lets you position the
 image visually, then cuts it into one perfectly aligned piece per screen and
@@ -19,8 +25,10 @@ sets them for you.
   are saved to `~/Pictures/WallStitch/`.
 - **Spanning slideshow:** import up to 50 random wallpapers (or use a folder)
   and cycle through them in sync on every monitor. Plasma's own slideshow
-  runs a separate timer per screen, so WallStitch uses a systemd user timer
-  that stitches each image across all screens at once.
+  runs a separate timer per screen, so WallStitch uses a small background agent
+  that stitches each image across all screens at once. The slideshow keeps
+  running after you close the window, starts again at login, and re-fits the
+  picture when you plug monitors in or out.
 - **Restore:** one click puts back the wallpaper you had before.
 - **CLI:** for scripts and dotfiles.
 
@@ -72,7 +80,8 @@ for example 5120×1440 for two 1440p monitors side by side.
 
 ## Roadmap
 
-- [ ] Re-apply automatically when monitors are plugged in or unplugged
+- [x] Re-fit the slideshow automatically when monitors are plugged in or unplugged
+- [ ] Do the same for a single (non-slideshow) wallpaper
 - [ ] Physical-size correction for monitors with different pixel density
 - [x] Synced spanning slideshows
 - [ ] Layout profiles (docked / laptop only)
@@ -91,6 +100,11 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 To add a desktop, implement the `Backend` protocol in
 [`src/wallstitch/backends/`](src/wallstitch/backends/__init__.py)
 (`apply`, `snapshot`, `restore`) and register it in `get_backend()`.
+
+## Support
+
+WallStitch is free and open source. If it brightens up your desk, you can
+support development on [Ko-fi](https://ko-fi.com/fizzy503). ♥
 
 ## License
 
