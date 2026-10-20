@@ -56,7 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("--dir", type=Path, help="where to save them (default ~/Pictures/WallStitch)")
 
     show = sub.add_parser("slideshow", help="cycle through up to 50 wallpapers in sync on all monitors")
-    show_sub = show.add_subparsers(dest="action", required=True)
+    show_sub = show.add_subparsers(dest="action", required=True, metavar="{start,stop,next,status}")
     start = show_sub.add_parser("start", help="start a slideshow")
     source = start.add_mutually_exclusive_group(required=True)
     source.add_argument("--folder", type=Path, help="use the newest 50 images in this folder")

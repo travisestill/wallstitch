@@ -1,0 +1,37 @@
+Source: wallstitch
+Section: graphics
+Priority: optional
+Maintainer: Travis Estill <immyouany@gmail.com>
+Build-Depends: debhelper-compat (= 13),
+               dh-python,
+               pybuild-plugin-pyproject,
+               python3-all,
+               python3-hatchling,
+               python3-pytest <!nocheck>,
+Standards-Version: 4.7.2
+Homepage: https://github.com/travisestill/wallstitch
+Vcs-Browser: https://github.com/travisestill/wallstitch
+Vcs-Git: https://github.com/travisestill/wallstitch.git
+Rules-Requires-Root: no
+
+Package: wallstitch
+Architecture: all
+Depends: ${misc:Depends},
+         ${python3:Depends},
+         python3-pyside6.qtcore,
+         python3-pyside6.qtdbus,
+         python3-pyside6.qtgui,
+         python3-pyside6.qtnetwork,
+         python3-pyside6.qtwidgets,
+Recommends: plasma-workspace,
+Description: stretch one wallpaper seamlessly across all your monitors
+ WallStitch reads your monitor layout, lets you position an image visually,
+ then cuts it into one perfectly aligned piece per screen and sets them as
+ your wallpaper.
+ .
+ Features include any monitor layout (multi-monitor, ultrawide, stacked,
+ mixed resolutions, HiDPI), bezel compensation, random wallpapers from
+ wallhaven.cc sized for your desktop, a synced spanning slideshow of up to 50
+ images, restoring your previous wallpaper, and a command-line interface.
+ .
+ KDE Plasma 6 is supported.

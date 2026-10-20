@@ -132,7 +132,28 @@ def is_running() -> bool:
     return bool(reply.value()) if reply.isValid() else False
 
 
+def _activate_agent() -> bool:
+    """Ask D-Bus to start the agent from its installed .service file.
+
+    This runs it as an independent process (a separate sandbox instance under
+    Flatpak), so the command that started the slideshow can exit right away.
+    """
+    from PySide6.QtDBus import QDBusConnection
+
+    from wallstitch.screens import ensure_app
+
+    ensure_app()
+    return QDBusConnection.sessionBus().interface().startService(AGENT_BUS_NAME).isValid()
+
+
 def _launch_agent() -> None:
+    if _activate_agent():
+        return
+    if in_flatpak():
+        from wallstitch.backends import BackendError
+
+        raise BackendError("could not start the slideshow agent through D-Bus")
+    # Running from a source checkout, where no D-Bus service file is installed.
     log = paths.state_dir() / "slideshow.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     with open(log, "ab") as err:

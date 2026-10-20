@@ -1,7 +1,9 @@
-.venv/
-__pycache__/
-*.egg-info/
-dist/
 build/
+build-flatpak/
+dist/
+*.egg-info/
+.flatpak-builder/
+__pycache__/
 .pytest_cache/
 .ruff_cache/
+.venv/

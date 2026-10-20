@@ -35,7 +35,26 @@ sets them for you.
 > Status: early alpha. KDE Plasma 6 is supported today; GNOME, Hyprland/Sway
 > and X11 backends are planned. Contributions are welcome.
 
-## Install (from source)
+## Install
+
+Download from the [latest release](https://github.com/travisestill/wallstitch/releases/latest):
+
+**Flatpak (any distro):**
+```bash
+flatpak install --user WallStitch-*.flatpak
+```
+Its runtime comes from [Flathub](https://flathub.org/setup), so set that up first if you haven't.
+
+**Ubuntu 25.10+ and other Debian-based distros that package PySide6:**
+```bash
+sudo apt install ./wallstitch_*_all.deb
+```
+
+Then launch **WallStitch** from your app menu. The command line works too:
+`wallstitch --help` (`.deb`) or
+`flatpak run io.github.travisestill.WallStitch --help` (Flatpak).
+
+### From source
 
 ```bash
 git clone https://github.com/travisestill/wallstitch.git
@@ -88,6 +107,15 @@ for example 5120×1440 for two 1440p monitors side by side.
 - [ ] Lock screen and SDDM login screen
 - [ ] GNOME, Hyprland/Sway and X11 backends
 - [ ] Flatpak and .deb packages
+
+## Packaging
+
+- `scripts/build-deb.sh` builds the `.deb` in a clean Ubuntu container
+  (podman or docker), exactly as CI does.
+- `packaging/flatpak/` holds the Flatpak manifest:
+  `flatpak run org.flatpak.Builder --user --install build-flatpak packaging/flatpak/io.github.travisestill.WallStitch.yml`
+- Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds both and
+  publishes a GitHub Release with notes from `CHANGELOG.md`.
 
 ## Development
 

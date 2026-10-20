@@ -1,0 +1,4 @@
+data/io.github.travisestill.WallStitch.desktop usr/share/applications
+data/io.github.travisestill.WallStitch.metainfo.xml usr/share/metainfo
+src/wallstitch/resources/io.github.travisestill.WallStitch.svg usr/share/icons/hicolor/scalable/apps
+data/io.github.travisestill.WallStitch.Slideshow.service usr/share/dbus-1/services

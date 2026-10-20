@@ -38,6 +38,9 @@ dev = ["pytest", "ruff"]
 [tool.hatch.version]
 path = "src/wallstitch/__init__.py"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/wallstitch"]
+
 [tool.ruff]
 line-length = 110
 target-version = "py310"

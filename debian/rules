@@ -1,0 +1,8 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME = wallstitch
+# Tests import the source tree directly (see pyproject.toml) and need no Qt.
+export PYBUILD_TEST_ARGS = {dir}/tests
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild

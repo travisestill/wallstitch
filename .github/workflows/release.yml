@@ -1,0 +1,101 @@
+name: Release
+
+# Push a tag like v0.1.0 to build the .deb and .flatpak and publish a GitHub
+# Release with both attached. Release notes come from CHANGELOG.md.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag must match the version in the code, Debian changelog and AppStream
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          grep -q "__version__ = \"$tag\"" src/wallstitch/__init__.py
+          head -1 debian/changelog | grep -q "($tag"
+          grep -q "<release version=\"$tag\"" data/io.github.travisestill.WallStitch.metainfo.xml
+          grep -q "^## \[$tag\]" CHANGELOG.md
+
+  deb:
+    needs: check-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ENGINE=docker ./scripts/build-deb.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: dist/*.deb
+
+  flatpak:
+    needs: check-version
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.11
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flathub-infra/flatpak-github-actions/flatpak-builder@master
+        with:
+          manifest-path: packaging/flatpak/io.github.travisestill.WallStitch.yml
+          bundle: WallStitch-${{ github.ref_name }}-x86_64.flatpak
+          cache-key: flatpak-builder-${{ github.sha }}
+
+  release:
+    needs: [deb, flatpak]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Collect files
+        run: |
+          mkdir upload
+          find artifacts -type f \( -name '*.deb' -o -name '*.flatpak' \) -exec cp {} upload/ \;
+          ls -l upload
+      - name: Release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { on = 1; next }
+            on && /^## \[/ { exit }
+            on && /^\[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          cat >> notes.md <<'EOF'
+
+          ## Install
+
+          **Flatpak (any distro):** download the `.flatpak` below, then
+          ```
+          flatpak install --user WallStitch-*.flatpak
+          ```
+          It needs the Flathub remote for its runtime.
+
+          **Ubuntu 25.10+ / Debian-based with PySide6:** download the `.deb` below, then
+          ```
+          sudo apt install ./wallstitch_*_all.deb
+          ```
+
+          Then open **WallStitch** from your app menu, or run `wallstitch --help` for the command line.
+
+          ♥ If WallStitch brightens up your desk, you can [support it on Ko-fi](https://ko-fi.com/fizzy503).
+          EOF
+          cat notes.md
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" upload/* \
+            --title "WallStitch ${GITHUB_REF_NAME#v}" \
+            --notes-file notes.md \
+            --verify-tag
