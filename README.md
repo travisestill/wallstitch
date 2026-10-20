@@ -129,6 +129,14 @@ To add a desktop, implement the `Backend` protocol in
 [`src/wallstitch/backends/`](src/wallstitch/backends/__init__.py)
 (`apply`, `snapshot`, `restore`) and register it in `get_backend()`.
 
+## How WallStitch was made
+
+WallStitch was created with AI: its code, packaging and documentation were
+written by [Claude Code](https://claude.com/claude-code) (Anthropic), directed
+and tested by [@travisestill](https://github.com/travisestill). Out of respect
+for distribution channels that don't accept AI-generated software, such as
+Flathub, it is published only here on GitHub.
+
 ## Support
 
 WallStitch is free and open source. If it brightens up your desk, you can
